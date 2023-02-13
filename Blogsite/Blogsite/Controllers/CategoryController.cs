@@ -67,7 +67,7 @@ namespace Blogsite.Controllers
                 }
                 else
                 {
-                    return BadRequest("PERSE KRIJOHET?");
+                    return BadRequest();
                 }
             }
             catch(Exception)
