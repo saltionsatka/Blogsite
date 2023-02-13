@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Blogsite.Controllers
 {
-    [Route("api/Posts")]
+    [Route("api/[controller]")]
     [ApiController]
     public class PostController : Controller
     {
@@ -29,7 +29,7 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
+                    "Error retrieving posts from the database");
             }
         }
 
@@ -48,18 +48,18 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
+                    "Error retrieving post from the database");
             }
         }
 
         [HttpPost]
         [Route("AddPost")]
-        public async Task<IActionResult> AddPost(Post postRequest)
+        public async Task<ActionResult<Post>> AddPost(Post postRequest)
         {
             try
             {
                 await _dbContext.Posts.AddAsync(postRequest);
-                if (await _dbContext.SaveChangesAsync() > 1)
+                if (await _dbContext.SaveChangesAsync() > 0)
                 {
                     return Ok(postRequest);
                 }
@@ -71,7 +71,7 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                        "Error retrieving data from the database");
+                        "Error adding post to the database");
             }
         }
 
@@ -101,7 +101,7 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
+                    "Error updating post from the database");
             }
         }
 
@@ -124,7 +124,7 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
+                    "Error deleting post from the database");
             }
         }
 
