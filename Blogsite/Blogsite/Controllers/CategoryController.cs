@@ -25,7 +25,7 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var categories = await _dbContext.Categories.ToListAsync();
+                var categories = await _dbContext.Categories.Include(c => c.Posts).ToListAsync();
                 return categories;
             } 
             catch(Exception)
@@ -41,7 +41,7 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var category = await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id);
+                var category = await _dbContext.Categories.Include(c => c.Posts).FirstOrDefaultAsync(c => c.Id == id);
 
                 if (category == null) return NotFound();
 
