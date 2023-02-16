@@ -1,4 +1,7 @@
-﻿using Blogsite.Data;
+﻿using AutoMapper;
+using Blogsite.Data;
+using Blogsite.DTO_Models;
+using Blogsite.DTO_Models.RequestDtos;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,19 +17,21 @@ namespace Blogsite.Controllers
     public class CategoryController : Controller
     {
         private readonly AppDbContext _dbContext;
+        private readonly IMapper _mapper;
 
-        public CategoryController(AppDbContext dbContext)
+        public CategoryController(AppDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Category>>> GetCategories()
+        public async Task<ActionResult<List<CategoryDto>>> GetCategories()
         {
             try
             {
                 var categories = await _dbContext.Categories.Include(c => c.Posts).ToListAsync();
-                return categories;
+                return Ok(_mapper.Map<List<CategoryDto>>(categories));
             } 
             catch(Exception)
             {
@@ -37,7 +42,7 @@ namespace Blogsite.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<Category>> GetCategoryById(int id)
+        public async Task<ActionResult<CategoryDto>> GetCategoryById(int id)
         {
             try
             {
@@ -45,7 +50,7 @@ namespace Blogsite.Controllers
 
                 if (category == null) return NotFound();
 
-                return category;
+                return Ok(_mapper.Map<CategoryDto>(category));
             }
             catch (Exception)
             {
@@ -56,14 +61,15 @@ namespace Blogsite.Controllers
 
         [HttpPost]
         [Route("AddCategory")]
-        public async Task<ActionResult<Category>> AddCategory(Category categoryRequest)
+        public async Task<ActionResult<CategoryDto>> AddCategory(RequestCategoryDto requestCategoryDto)
         {
             try
             {
-                await _dbContext.Categories.AddAsync(categoryRequest);
+                var newCategory = _mapper.Map<Category>(requestCategoryDto);
+                await _dbContext.Categories.AddAsync(newCategory);
                 if(await _dbContext.SaveChangesAsync() > 0)
                 {
-                    return Ok(categoryRequest);
+                    return Ok(_mapper.Map<CategoryDto>(newCategory));
                 }
                 else
                 {
@@ -79,21 +85,19 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdateCategory")]
-        public async Task<ActionResult<Category>> UpdateCategory(Category categoryRequest)
+        public async Task<ActionResult<CategoryDto>> UpdateCategory(RequestCategoryDto requestCategoryDto)
         {
             try
             {
-                var category = await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == categoryRequest.Id);
+                var category = await _dbContext.Categories.SingleOrDefaultAsync(c => c.Id == requestCategoryDto.Id);
+                
                 if (category == null) return NotFound();
 
-                category.Title = categoryRequest.Title;
-                category.MetaTitle = categoryRequest.MetaTitle;
-                category.Slug = categoryRequest.Slug;
-                category.Content = categoryRequest.Content;
+                var response = _mapper.Map(requestCategoryDto, category);
 
                 _dbContext.SaveChanges();
 
-                return category;
+                return _mapper.Map<CategoryDto>(response);
             }
             catch(Exception)
             {

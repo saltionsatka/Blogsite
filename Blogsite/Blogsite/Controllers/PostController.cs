@@ -18,7 +18,6 @@ namespace Blogsite.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
-
         
 
         public PostController(AppDbContext dbContext, IMapper mapper)
@@ -88,17 +87,17 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdatePost")]
-        public async Task<ActionResult<PostDto>> UpdatePost(RequestPostDto postRequest)
+        public async Task<ActionResult<PostDto>> UpdatePost(RequestPostDto requestPostDto)
         {
             try
             {
                 //var post = await _dbContext.Posts.Include(p => p.Comments).FirstOrDefaultAsync(p => p.Id == postRequest.Id);
 
-                var post = await _dbContext.Posts.Where(p => p.Id == postRequest.Id).Include(p => p.Comments).Include(p=> p.Tags).Include(p => p.Categories).SingleOrDefaultAsync();
+                var post = await _dbContext.Posts.Where(p => p.Id == requestPostDto.Id).Include(p => p.Comments).Include(p=> p.Tags).Include(p => p.Categories).SingleOrDefaultAsync();
 
                 if (post == null) return NotFound();
 
-                var response = _mapper.Map(postRequest, post);
+                var response = _mapper.Map(requestPostDto, post);
 
                 _dbContext.SaveChanges();
 

@@ -1,4 +1,7 @@
-﻿using Blogsite.Data;
+﻿using AutoMapper;
+using Blogsite.Data;
+using Blogsite.DTO_Models;
+using Blogsite.DTO_Models.RequestDtos;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,18 +17,21 @@ namespace Blogsite.Controllers
     public class CommentController : Controller
     {
         private readonly AppDbContext _dbContext;
-        public CommentController(AppDbContext dbContext)
+        private readonly IMapper _mapper;
+
+        public CommentController(AppDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Comment>>> GetComments()
+        public async Task<ActionResult<List<CommentDto>>> GetComments()
         {
             try
             {
-                var comments = await _dbContext.Comments.ToListAsync();
-                return comments;
+                var comments = await _dbContext.Comments.Include(c => c.Post).ToListAsync();
+                return Ok(_mapper.Map<List<CommentDto>>(comments));
             }
             catch (Exception)
             {
@@ -36,15 +42,15 @@ namespace Blogsite.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<Comment>> GetCommentById(int id)
+        public async Task<ActionResult<CommentDto>> GetCommentById(int id)
         {
             try
             {
-                var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == id);
+                var comment = await _dbContext.Comments.Include(c => c.Post).FirstOrDefaultAsync(c => c.Id == id);
 
                 if (comment == null) return NotFound();
 
-                return comment;
+                return Ok(_mapper.Map<CommentDto>(comment));
             }
             catch (Exception)
             {
@@ -55,14 +61,16 @@ namespace Blogsite.Controllers
 
         [HttpPost]
         [Route("AddComment")]
-        public async Task<ActionResult<Comment>> AddComment(Comment commentRequest)
+        public async Task<ActionResult<CommentDto>> AddComment(RequestCommentDto requestCommentDto)
         {
             try
             {
-                await _dbContext.Comments.AddAsync(commentRequest);
+                var newComment = _mapper.Map<Comment>(requestCommentDto);
+
+                await _dbContext.Comments.AddAsync(newComment);
                 if (await _dbContext.SaveChangesAsync() > 0)
                 {
-                    return Ok(commentRequest);
+                    return Ok(_mapper.Map<CommentDto>(newComment));
                 }
                 else
                 {
@@ -78,20 +86,19 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdateComment")]
-        public async Task<ActionResult<Comment>> UpdateComment(Comment commentRequest)
+        public async Task<ActionResult<CommentDto>> UpdateComment(RequestCommentDto requestCommentDto)
         {
             try
             {
-                var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentRequest.Id);
+                var comment = await _dbContext.Comments.SingleOrDefaultAsync(c => c.Id == requestCommentDto.Id);
+                
                 if (comment == null) return NotFound();
 
-                comment.Title = commentRequest.Title;
-                comment.Published = true;
-                comment.Content = commentRequest.Content;
+                var response = _mapper.Map(requestCommentDto, comment);
 
                 _dbContext.SaveChanges();
 
-                return commentRequest;
+                return _mapper.Map<CommentDto>(response);
             }
             catch (Exception)
             {

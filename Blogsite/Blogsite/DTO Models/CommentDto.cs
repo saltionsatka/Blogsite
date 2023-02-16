@@ -10,6 +10,8 @@ namespace Blogsite.DTO_Models
 
         public string? Content { get; set; }
 
+        public bool? Published { get; set; }
+
         public virtual PostDto? Post { get; set; }
     }
 }

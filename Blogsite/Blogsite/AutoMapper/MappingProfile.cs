@@ -16,6 +16,9 @@ namespace Blogsite.AutoMapper
 
 
             CreateMap<RequestPostDto, Post>();
+            CreateMap<RequestCommentDto, Comment>();
+            CreateMap<RequestCategoryDto, Category>();
+            CreateMap<RequestTagDto, Tag>();
         }
     }
 }
