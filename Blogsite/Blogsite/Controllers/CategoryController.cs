@@ -1,8 +1,10 @@
-﻿using Blogsite.Data;
+﻿using AutoMapper;
+using Blogsite.Data;
+using Blogsite.DTO_Models;
+using Blogsite.DTO_Models.RequestDtos;
+using Blogsite.Interfaces;
 using Blogsite.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Blogsite.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,35 +16,38 @@ namespace Blogsite.Controllers
     public class CategoryController : Controller
     {
         private readonly AppDbContext _dbContext;
+        private readonly IMapper _mapper;
+        private readonly ICategoryService _categoryService;
 
-        public CategoryController(AppDbContext dbContext)
+        public CategoryController(AppDbContext dbContext, IMapper mapper, ICategoryService categoryService)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
+            _categoryService = categoryService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Category>>> GetCategories()
+        public async Task<ActionResult<List<CategoryDto>>> GetCategories()
         {
             try
             {
-                var categories = await _dbContext.Categories.ToListAsync();
-                return categories;
-            } 
-            catch(Exception)
+                return await _categoryService.GetCategoriesAsync();
+            }
+            catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving categories from the database");
+                    "Error retrieving categories from database");
             }
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<Category>> GetCategoryById(int id)
+        public async Task<ActionResult<CategoryDto>> GetCategoryById(int id)
         {
             try
             {
-                var category = await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id);
-
+                var category = await _categoryService.GetCategoryByIdAsync(id);
+                
                 if (category == null) return NotFound();
 
                 return category;
@@ -56,19 +61,14 @@ namespace Blogsite.Controllers
 
         [HttpPost]
         [Route("AddCategory")]
-        public async Task<ActionResult<Category>> AddCategory(Category categoryRequest)
+        public async Task<ActionResult<CategoryDto>> AddCategory(RequestCategoryDto requestCategoryDto)
         {
             try
             {
-                await _dbContext.Categories.AddAsync(categoryRequest);
-                if(await _dbContext.SaveChangesAsync() > 0)
-                {
-                    return Ok(categoryRequest);
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                var newCategory = await _categoryService.CreateCategoryAsync(requestCategoryDto);
+                if (newCategory == null) return BadRequest();
+                    
+                return Ok(newCategory);
             }
             catch(Exception)
             {
@@ -79,23 +79,17 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdateCategory")]
-        public async Task<ActionResult<Category>> UpdateCategory(Category categoryRequest)
+        public async Task<ActionResult<CategoryDto>> UpdateCategory(RequestCategoryDto requestCategoryDto)
         {
             try
             {
-                var category = await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == categoryRequest.Id);
+                var category = await _categoryService.UpdateCategoryAsync(requestCategoryDto);
+
                 if (category == null) return NotFound();
 
-                category.Title = categoryRequest.Title;
-                category.MetaTitle = categoryRequest.MetaTitle;
-                category.Slug = categoryRequest.Slug;
-                category.Content = categoryRequest.Content;
-
-                _dbContext.SaveChanges();
-
-                return category;
+                return Ok(category);
             }
-            catch(Exception)
+            catch(Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     "Error updating category from the database");
@@ -108,12 +102,9 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var category = await _dbContext.Categories.FirstOrDefaultAsync(c => c.Id == id);
+                var isDeleted = await _categoryService.DeleteCategoryAsync(id);
 
-                if(category == null) return NotFound();
-
-                _dbContext.Categories.Remove(category);
-                await _dbContext.SaveChangesAsync();
+                if(!isDeleted) return NotFound();
 
                 return Ok();
             }

@@ -1,10 +1,14 @@
-﻿using Blogsite.Data;
+﻿using AutoMapper;
+using Blogsite.Data;
+using Blogsite.DTO_Models;
+using Blogsite.DTO_Models.RequestDtos;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Blogsite.Controllers
 {
@@ -13,18 +17,21 @@ namespace Blogsite.Controllers
     public class PostController : Controller
     {
         private readonly AppDbContext _dbContext;
+        private readonly IMapper _mapper;
+        
 
-        public PostController(AppDbContext dbContext)
+        public PostController(AppDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Post>>> GetPosts() {
+        public async Task<ActionResult<List<PostDto>>> GetPosts() {
             try
             {
-                var posts = await _dbContext.Posts.ToListAsync();
-                return posts;
+                var posts = await _dbContext.Posts.Include(p => p.Categories).Include(p => p.Comments).Include(p => p.Tags).ToListAsync();
+                return Ok(_mapper.Map<List<PostDto>>(posts));
             }
             catch (Exception)
             {
@@ -35,15 +42,15 @@ namespace Blogsite.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<Post>> GetPostsById(int id)
+        public async Task<ActionResult<PostDto>> GetPostsById(int id)
         {
             try
             {
-                var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == id);
+                var post = await _dbContext.Posts.Include(p => p.Categories).Include(p => p.Comments).Include(p => p.Tags).FirstOrDefaultAsync(p => p.Id == id);
 
                 if (post == null) return NotFound();
 
-                return post;
+                return Ok(_mapper.Map<PostDto>(post));
             }
             catch (Exception)
             {
@@ -54,14 +61,16 @@ namespace Blogsite.Controllers
 
         [HttpPost]
         [Route("AddPost")]
-        public async Task<ActionResult<Post>> AddPost(Post postRequest)
+        public async Task<ActionResult<PostDto>> AddPost(RequestPostDto requestPostDto)
         {
             try
             {
-                await _dbContext.Posts.AddAsync(postRequest);
+                var newPost = _mapper.Map<Post>(requestPostDto);
+
+                await _dbContext.Posts.AddAsync(newPost);
                 if (await _dbContext.SaveChangesAsync() > 0)
                 {
-                    return Ok(postRequest);
+                    return Ok(_mapper.Map<PostDto>(newPost));
                 }
                 else
                 {
@@ -78,25 +87,21 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdatePost")]
-        public async Task<ActionResult<Post>> UpdatePost(Post postRequest)
+        public async Task<ActionResult<PostDto>> UpdatePost(RequestPostDto requestPostDto)
         {
             try
             {
-                var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postRequest.Id);
+                //var post = await _dbContext.Posts.Include(p => p.Comments).FirstOrDefaultAsync(p => p.Id == postRequest.Id);
+
+                var post = await _dbContext.Posts.Where(p => p.Id == requestPostDto.Id).Include(p => p.Comments).Include(p=> p.Tags).Include(p => p.Categories).SingleOrDefaultAsync();
 
                 if (post == null) return NotFound();
 
-                post.Title= postRequest.Title;
-                post.MetaTitle = postRequest.MetaTitle;
-                post.Slug = postRequest.Slug;
-                post.Summary = postRequest.Summary;
-                post.Published = true;
-                post.UpdatedAt = DateTime.Now;
-                post.Content = postRequest.Content;
+                var response = _mapper.Map(requestPostDto, post);
 
                 _dbContext.SaveChanges();
 
-                return post;
+                return _mapper.Map<PostDto>(response);
             }
             catch (Exception)
             {

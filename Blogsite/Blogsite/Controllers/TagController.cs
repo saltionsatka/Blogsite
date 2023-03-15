@@ -1,4 +1,7 @@
-﻿using Blogsite.Data;
+﻿using AutoMapper;
+using Blogsite.Data;
+using Blogsite.DTO_Models;
+using Blogsite.DTO_Models.RequestDtos;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -14,18 +17,21 @@ namespace Blogsite.Controllers
     public class TagController : Controller
     {
         private readonly AppDbContext _dbContext;
-        public TagController(AppDbContext dbContext)
+        private readonly IMapper _mapper;
+
+        public TagController(AppDbContext dbContext, IMapper mapper)
         {
             _dbContext = dbContext;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Tag>>> GetTags()
+        public async Task<ActionResult<List<TagDto>>> GetTags()
         {
             try
             {
                 var tags = await _dbContext.Tags.ToListAsync();
-                return tags;
+                return Ok(_mapper.Map<List<TagDto>>(tags));
             }
             catch (Exception)
             {
@@ -36,7 +42,7 @@ namespace Blogsite.Controllers
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<Tag>> GetTagById(int id)
+        public async Task<ActionResult<TagDto>> GetTagById(int id)
         {
             try
             {
@@ -44,7 +50,7 @@ namespace Blogsite.Controllers
 
                 if (tag == null) return NotFound();
 
-                return tag;
+                return Ok(_mapper.Map<TagDto>(tag));
             }
             catch (Exception)
             {
@@ -55,14 +61,16 @@ namespace Blogsite.Controllers
 
         [HttpPost]
         [Route("AddTag")]
-        public async Task<ActionResult<Tag>> AddTag(Tag tagRequest)
+        public async Task<ActionResult<TagDto>> AddTag(RequestTagDto requestTagDto)
         {
             try
             {
-                await _dbContext.Tags.AddAsync(tagRequest);
+                var newTag = _mapper.Map<Tag>(requestTagDto);
+
+                await _dbContext.Tags.AddAsync(newTag);
                 if (await _dbContext.SaveChangesAsync() > 0)
                 {
-                    return Ok(tagRequest);
+                    return Ok(_mapper.Map<TagDto>(newTag));
                 }
                 else
                 {
@@ -78,20 +86,18 @@ namespace Blogsite.Controllers
 
         [HttpPut]
         [Route("UpdateTag")]
-        public async Task<ActionResult<Tag>> UpdateTag(Tag tagRequest)
+        public async Task<ActionResult<TagDto>> UpdateTag(RequestTagDto requestTagDto)
         {
             try
             {
-                var tag = await _dbContext.Tags.FirstOrDefaultAsync(c => c.Id == tagRequest.Id);
+                var tag = await _dbContext.Tags.FirstOrDefaultAsync(c => c.Id == requestTagDto.Id);
                 if (tag == null) return NotFound();
 
-                tag.Title = tagRequest.Title;
-                tag.Slug = tagRequest.Slug;
-                tag.Content = tagRequest.Content;
+                var response = _mapper.Map(requestTagDto, tag);
 
                 _dbContext.SaveChanges();
 
-                return tagRequest;
+                return _mapper.Map<TagDto>(response);
             }
             catch (Exception)
             {
