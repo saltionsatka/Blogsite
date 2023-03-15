@@ -1,9 +1,9 @@
 using Blogsite.Data;
-using Blogsite.Models;
-using AutoMapper;
-using Swashbuckle.AspNetCore.Swagger;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using Blogsite.Interfaces;
+using Blogsite.Services;
+using Blogsite.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(builder.Configuration["Data:ConnectionStrings:DefaultConnection"]));
 
 //builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" }));
+
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
 
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
