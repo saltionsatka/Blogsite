@@ -58,8 +58,7 @@ namespace Blogsite.Services
         {
             try
             {
-                //var comments = await _genericRepository.GetAllAsQueryable().Include(c => c.Post).ToListAsync();
-                var comments = await _genericRepository.GetAll();
+                var comments = await _genericRepository.GetAllAsQueryable().Include(c => c.Post).ToListAsync();
 
                 return _mapper.Map<List<CommentDto>>(comments);
             }

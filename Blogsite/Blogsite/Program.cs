@@ -16,6 +16,8 @@ builder.Services.AddDbContext<AppDbContext>(opts => opts.UseSqlServer(builder.Co
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
+builder.Services.AddScoped<IPostService, PostService>();
+
 
 
 builder.Services.AddSwaggerGen();
