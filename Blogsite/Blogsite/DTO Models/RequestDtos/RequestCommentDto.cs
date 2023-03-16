@@ -12,12 +12,12 @@ namespace Blogsite.DTO_Models.RequestDtos
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime PublishedAt { get; set; }
+        public DateTime? PublishedAt { get; set; }
 
         public string? Content { get; set; }
 
         public int PostId { get; set; }
 
-        public virtual Post? Post { get; set; }
+        public virtual ICollection<Post>? Posts { get; set; }
     }
 }
