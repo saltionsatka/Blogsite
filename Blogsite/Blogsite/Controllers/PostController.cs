@@ -2,6 +2,7 @@
 using Blogsite.Data;
 using Blogsite.DTO_Models;
 using Blogsite.DTO_Models.RequestDtos;
+using Blogsite.Interfaces;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,20 +19,20 @@ namespace Blogsite.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
-        
+        private readonly IPostService _postService;
 
-        public PostController(AppDbContext dbContext, IMapper mapper)
+        public PostController(AppDbContext dbContext, IMapper mapper, IPostService postService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _postService = postService;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<PostDto>>> GetPosts() {
             try
             {
-                var posts = await _dbContext.Posts.Include(p => p.Categories).Include(p => p.Comments).Include(p => p.Tags).ToListAsync();
-                return Ok(_mapper.Map<List<PostDto>>(posts));
+                return await _postService.GetPostsAsync();
             }
             catch (Exception)
             {
@@ -46,11 +47,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var post = await _dbContext.Posts.Include(p => p.Categories).Include(p => p.Comments).Include(p => p.Tags).FirstOrDefaultAsync(p => p.Id == id);
+                var post = await _postService.GetPostByIdAsync(id);
 
                 if (post == null) return NotFound();
 
-                return Ok(_mapper.Map<PostDto>(post));
+                return Ok(post);
             }
             catch (Exception)
             {
@@ -65,17 +66,10 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var newPost = _mapper.Map<Post>(requestPostDto);
-
-                await _dbContext.Posts.AddAsync(newPost);
-                if (await _dbContext.SaveChangesAsync() > 0)
-                {
-                    return Ok(_mapper.Map<PostDto>(newPost));
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                var newPost = await _postService.CreatePostAsync(requestPostDto);
+                if (newPost == null) return BadRequest();
+                
+                return Ok(newPost);
             }
             catch (Exception)
             {
@@ -91,17 +85,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                //var post = await _dbContext.Posts.Include(p => p.Comments).FirstOrDefaultAsync(p => p.Id == postRequest.Id);
-
-                var post = await _dbContext.Posts.Where(p => p.Id == requestPostDto.Id).Include(p => p.Comments).Include(p=> p.Tags).Include(p => p.Categories).SingleOrDefaultAsync();
+                var post = await _postService.UpdatePostAsync(requestPostDto);
 
                 if (post == null) return NotFound();
 
-                var response = _mapper.Map(requestPostDto, post);
-
-                _dbContext.SaveChanges();
-
-                return _mapper.Map<PostDto>(response);
+                return Ok(post);
             }
             catch (Exception)
             {
@@ -117,12 +105,9 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == id);
+                var isDeleted = await _postService.DeletePostAsync(id);
 
-                if (post == null) return NotFound();
-
-                _dbContext.Posts.Remove(post);
-                await _dbContext.SaveChangesAsync();
+                if (!isDeleted) return NotFound();
 
                 return Ok();
             }

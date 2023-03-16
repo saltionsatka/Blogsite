@@ -89,7 +89,7 @@ namespace Blogsite.Controllers
 
                 return Ok(category);
             }
-            catch(Exception ex)
+            catch(Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     "Error updating category from the database");
