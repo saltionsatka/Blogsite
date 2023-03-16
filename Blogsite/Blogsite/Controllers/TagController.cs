@@ -2,7 +2,9 @@
 using Blogsite.Data;
 using Blogsite.DTO_Models;
 using Blogsite.DTO_Models.RequestDtos;
+using Blogsite.Interfaces;
 using Blogsite.Models;
+using Blogsite.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -18,11 +20,13 @@ namespace Blogsite.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
+        private readonly ITagService _tagService;
 
-        public TagController(AppDbContext dbContext, IMapper mapper)
+        public TagController(AppDbContext dbContext, IMapper mapper, ITagService tagService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _tagService = tagService;
         }
 
         [HttpGet]
@@ -30,8 +34,7 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var tags = await _dbContext.Tags.ToListAsync();
-                return Ok(_mapper.Map<List<TagDto>>(tags));
+                return await _tagService.GetTagsAsync();
             }
             catch (Exception)
             {
@@ -46,11 +49,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var tag = await _dbContext.Tags.FirstOrDefaultAsync(t => t.Id == id);
+                var tag = await _tagService.GetTagByIdAsync(id);
 
                 if (tag == null) return NotFound();
 
-                return Ok(_mapper.Map<TagDto>(tag));
+                return Ok(tag);
             }
             catch (Exception)
             {
@@ -65,17 +68,10 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var newTag = _mapper.Map<Tag>(requestTagDto);
+                var newTag = await _tagService.CreateTagAsync(requestTagDto);
+                if (newTag == null) return BadRequest();
 
-                await _dbContext.Tags.AddAsync(newTag);
-                if (await _dbContext.SaveChangesAsync() > 0)
-                {
-                    return Ok(_mapper.Map<TagDto>(newTag));
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                return Ok(newTag);
             }
             catch (Exception)
             {
@@ -90,14 +86,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var tag = await _dbContext.Tags.FirstOrDefaultAsync(c => c.Id == requestTagDto.Id);
+                var tag = await _tagService.UpdateTagAsync(requestTagDto);
+                
                 if (tag == null) return NotFound();
 
-                var response = _mapper.Map(requestTagDto, tag);
-
-                _dbContext.SaveChanges();
-
-                return _mapper.Map<TagDto>(response);
+                return Ok(tag);
             }
             catch (Exception)
             {
@@ -112,12 +105,9 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == id);
+                var isDeleted = await _tagService.DeleteTagAsync(id);
 
-                if (comment == null) return NotFound();
-
-                _dbContext.Comments.Remove(comment);
-                await _dbContext.SaveChangesAsync();
+                if (!isDeleted) return NotFound();
 
                 return Ok();
             }

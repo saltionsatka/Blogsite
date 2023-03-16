@@ -17,7 +17,7 @@ builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepositor
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IPostService, PostService>();
-
+builder.Services.AddScoped<ITagService, TagService>();
 
 
 builder.Services.AddSwaggerGen();
