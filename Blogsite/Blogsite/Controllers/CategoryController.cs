@@ -50,7 +50,7 @@ namespace Blogsite.Controllers
                 
                 if (category == null) return NotFound();
 
-                return category;
+                return Ok(category);
             }
             catch (Exception)
             {

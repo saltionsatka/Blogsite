@@ -2,6 +2,7 @@
 using Blogsite.Data;
 using Blogsite.DTO_Models;
 using Blogsite.DTO_Models.RequestDtos;
+using Blogsite.Interfaces;
 using Blogsite.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,11 +19,13 @@ namespace Blogsite.Controllers
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
+        private readonly ICommentService _commentService;
 
-        public CommentController(AppDbContext dbContext, IMapper mapper)
+        public CommentController(AppDbContext dbContext, IMapper mapper, ICommentService commentService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
+            _commentService = commentService;
         }
 
         [HttpGet]
@@ -30,8 +33,7 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var comments = await _dbContext.Comments.Include(c => c.Post).ToListAsync();
-                return Ok(_mapper.Map<List<CommentDto>>(comments));
+                return await _commentService.GetCommentsAsync();
             }
             catch (Exception)
             {
@@ -46,11 +48,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var comment = await _dbContext.Comments.Include(c => c.Post).FirstOrDefaultAsync(c => c.Id == id);
+                var comment = await _commentService.GetCommentByIdAsync(id);
 
                 if (comment == null) return NotFound();
 
-                return Ok(_mapper.Map<CommentDto>(comment));
+                return Ok(comment);
             }
             catch (Exception)
             {
@@ -65,17 +67,10 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var newComment = _mapper.Map<Comment>(requestCommentDto);
+                var newComment = await _commentService.CreateCommentAsync(requestCommentDto);
+                if (newComment == null) return BadRequest();
 
-                await _dbContext.Comments.AddAsync(newComment);
-                if (await _dbContext.SaveChangesAsync() > 0)
-                {
-                    return Ok(_mapper.Map<CommentDto>(newComment));
-                }
-                else
-                {
-                    return BadRequest();
-                }
+                return Ok(newComment);
             }
             catch (Exception)
             {
@@ -90,15 +85,11 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var comment = await _dbContext.Comments.SingleOrDefaultAsync(c => c.Id == requestCommentDto.Id);
+                var comment = await _commentService.UpdateCommentAsync(requestCommentDto);
                 
                 if (comment == null) return NotFound();
 
-                var response = _mapper.Map(requestCommentDto, comment);
-
-                _dbContext.SaveChanges();
-
-                return _mapper.Map<CommentDto>(response);
+                return Ok(comment);
             }
             catch (Exception)
             {
@@ -113,12 +104,9 @@ namespace Blogsite.Controllers
         {
             try
             {
-                var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == id);
+                var isDeleted = await _commentService.DeleteCommentAsync(id);
 
-                if (comment == null) return NotFound();
-
-                _dbContext.Comments.Remove(comment);
-                await _dbContext.SaveChangesAsync();
+                if (!isDeleted) return NotFound();
 
                 return Ok();
             }
