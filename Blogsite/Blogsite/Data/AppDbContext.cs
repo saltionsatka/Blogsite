@@ -1,16 +1,27 @@
 ﻿using System;
 using System.Diagnostics;
 using Blogsite.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blogsite.Data
 {
-    public class AppDbContext:DbContext
+    public class AppDbContext : IdentityDbContext<User>
     {
         public AppDbContext(DbContextOptions options) : base(options) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<IdentityRole>()
+                .HasData(
+                new IdentityRole { Name = "User", NormalizedName = "USER" },
+                new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" }
+                );
+
+
             //modelBuilder.Entity<CategoryPost>().HasKey(pc => new { pc.PostsId, pc.CategoriesId });
             //modelBuilder.Entity<PostTag>().HasKey(pt => new { pt.PostsId, pt.TagsId });
             modelBuilder.Entity<Comment>()
