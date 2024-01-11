@@ -15,97 +15,96 @@ namespace Blogsite.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PostController : Controller
+    public class CommentController : Controller
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
-        private readonly IPostService _postService;
+        private readonly ICommentService _commentService;
 
-        public PostController(AppDbContext dbContext, IMapper mapper, IPostService postService)
+        public CommentController(AppDbContext dbContext, IMapper mapper, ICommentService commentService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
-            _postService = postService;
+            _commentService = commentService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PostDto>>> GetPosts() {
+        public async Task<ActionResult<List<CommentDto>>> GetComments()
+        {
             try
             {
-                return await _postService.GetPostsAsync();
+                return await _commentService.GetCommentsAsync();
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving posts from the database");
+                    "Error retrieving comments from the database");
             }
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<PostDto>> GetPostsById(int id)
+        public async Task<ActionResult<CommentDto>> GetCommentById(int id)
         {
             try
             {
-                var post = await _postService.GetPostByIdAsync(id);
+                var comment = await _commentService.GetCommentByIdAsync(id);
 
-                if (post == null) return NotFound();
+                if (comment == null) return NotFound();
 
-                return Ok(post);
+                return Ok(comment);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving post from the database");
+                    "Error retrieving comment from database");
             }
         }
 
         [HttpPost]
-        [Route("AddPost")]
-        public async Task<ActionResult<PostDto>> AddPost(RequestPostDto requestPostDto)
+        [Route("AddComment")]
+        public async Task<ActionResult<CommentDto>> AddComment(RequestCommentDto requestCommentDto)
         {
             try
             {
-                var newPost = await _postService.CreatePostAsync(requestPostDto);
-                if (newPost == null) return BadRequest();
-                
-                return Ok(newPost);
+                var newComment = await _commentService.CreateCommentAsync(requestCommentDto);
+                if (newComment == null) return BadRequest();
+
+                return Ok(newComment);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                        "Error adding post to the database");
+                        "Error adding comment to the database");
             }
         }
-
 
         [HttpPut]
-        [Route("UpdatePost")]
-        public async Task<ActionResult<PostDto>> UpdatePost(RequestPostDto requestPostDto)
+        [Route("UpdateComment")]
+        public async Task<ActionResult<CommentDto>> UpdateComment(RequestCommentDto requestCommentDto)
         {
             try
             {
-                var post = await _postService.UpdatePostAsync(requestPostDto);
+                var comment = await _commentService.UpdateCommentAsync(requestCommentDto);
+                
+                if (comment == null) return NotFound();
 
-                if (post == null) return NotFound();
-
-                return Ok(post);
+                return Ok(comment);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error updating post from the database");
+                    "Error updating comment from the database");
             }
         }
-
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<ActionResult<Post>> DeletePost(int id)
+        public async Task<IActionResult> DeleteComment(int id)
         {
             try
             {
-                var isDeleted = await _postService.DeletePostAsync(id);
+                var isDeleted = await _commentService.DeleteCommentAsync(id);
 
                 if (!isDeleted) return NotFound();
 
@@ -114,10 +113,8 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error deleting post from the database");
+                    "Error deleting comment from the database");
             }
         }
-
-
     }
-}
+    }

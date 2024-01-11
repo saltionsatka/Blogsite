@@ -4,6 +4,7 @@ using Blogsite.DTO_Models;
 using Blogsite.DTO_Models.RequestDtos;
 using Blogsite.Interfaces;
 using Blogsite.Models;
+using Blogsite.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -15,97 +16,96 @@ namespace Blogsite.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PostController : Controller
+    public class TagController : Controller
     {
         private readonly AppDbContext _dbContext;
         private readonly IMapper _mapper;
-        private readonly IPostService _postService;
+        private readonly ITagService _tagService;
 
-        public PostController(AppDbContext dbContext, IMapper mapper, IPostService postService)
+        public TagController(AppDbContext dbContext, IMapper mapper, ITagService tagService)
         {
             _dbContext = dbContext;
             _mapper = mapper;
-            _postService = postService;
+            _tagService = tagService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PostDto>>> GetPosts() {
+        public async Task<ActionResult<List<TagDto>>> GetTags()
+        {
             try
             {
-                return await _postService.GetPostsAsync();
+                return await _tagService.GetTagsAsync();
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving posts from the database");
+                    "Error retrieving tags from the database");
             }
         }
 
         [HttpGet]
         [Route("{id}")]
-        public async Task<ActionResult<PostDto>> GetPostsById(int id)
+        public async Task<ActionResult<TagDto>> GetTagById(int id)
         {
             try
             {
-                var post = await _postService.GetPostByIdAsync(id);
+                var tag = await _tagService.GetTagByIdAsync(id);
 
-                if (post == null) return NotFound();
+                if (tag == null) return NotFound();
 
-                return Ok(post);
+                return Ok(tag);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving post from the database");
+                    "Error retrieving tag from database");
             }
         }
 
         [HttpPost]
-        [Route("AddPost")]
-        public async Task<ActionResult<PostDto>> AddPost(RequestPostDto requestPostDto)
+        [Route("AddTag")]
+        public async Task<ActionResult<TagDto>> AddTag(RequestTagDto requestTagDto)
         {
             try
             {
-                var newPost = await _postService.CreatePostAsync(requestPostDto);
-                if (newPost == null) return BadRequest();
-                
-                return Ok(newPost);
+                var newTag = await _tagService.CreateTagAsync(requestTagDto);
+                if (newTag == null) return BadRequest();
+
+                return Ok(newTag);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                        "Error adding post to the database");
+                        "Error adding tag to the database");
             }
         }
-
 
         [HttpPut]
-        [Route("UpdatePost")]
-        public async Task<ActionResult<PostDto>> UpdatePost(RequestPostDto requestPostDto)
+        [Route("UpdateTag")]
+        public async Task<ActionResult<TagDto>> UpdateTag(RequestTagDto requestTagDto)
         {
             try
             {
-                var post = await _postService.UpdatePostAsync(requestPostDto);
+                var tag = await _tagService.UpdateTagAsync(requestTagDto);
+                
+                if (tag == null) return NotFound();
 
-                if (post == null) return NotFound();
-
-                return Ok(post);
+                return Ok(tag);
             }
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error updating post from the database");
+                    "Error updating tag from the database");
             }
         }
-
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<ActionResult<Post>> DeletePost(int id)
+        public async Task<IActionResult> DeleteComment(int id)
         {
             try
             {
-                var isDeleted = await _postService.DeletePostAsync(id);
+                var isDeleted = await _tagService.DeleteTagAsync(id);
 
                 if (!isDeleted) return NotFound();
 
@@ -114,10 +114,8 @@ namespace Blogsite.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error deleting post from the database");
+                    "Error deleting comment from the database");
             }
         }
-
-
     }
 }
